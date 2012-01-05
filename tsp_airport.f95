@@ -1,48 +1,61 @@
 program airportappro
   implicit none
 
-  !Define new datatype for targets
+  !Define new datatype for airports
   type map_target
     character(len = 20) :: name
-    real :: lon,lat
+    real :: lat,lon
   end type map_target
   
   !Define variables
-  integer :: N, count, st
+  !
+  ! N = number of cities 
+  ! head, stack are help variables for shortest_path
+  ! count = number of routes analyzed
+  !
+  integer :: N, count, st, head
   character(len = 20) :: filename
   type(map_target), allocatable :: airport(:), shortestroute(:)
   integer, allocatable :: stack(:)
   real, allocatable :: distances(:,:)
-  real :: shortestdistance = 100000
-  real :: pi=3.141592
-
-  write(*,*) ""
+  real :: shortestdistance
+  real, parameter :: deg_to_rad=3.141592/180.0
+  
+  write(*,*) "Type input file: "
   read(*,*) filename
   
-  call read_file(filename,airport,N)
-  call calculate_distances(airport,N,distances)
+  call read_file()
+  write(*,*) "Found next airports from file:"
+  call print_targets(airport)
+  call calculate_distances()
   
+  !Initialize variables for shortest_path
+  stack(1:N)=1
+  head=1
   count=0
-  stack(:)=1
-  call shortest_path(airport,stack,1,count,N,distances,shortestdistance,shortestroute)
-  write(*,*) count, shortestdistance
+  shortestdistance = 100000
 
-  call print_path(shortestroute)
+  call shortest_path(stack,head)
+  
+  write(*,*)
+  write(*,*) "Number of paths analyzed:", count
+  write(*,*)
+  write(*,*) "Shortest distance:", shortestdistance, "km"
+  write(*,*) "Shortest path::"
+
+  call print_targets(shortestroute)
   stop
+
 contains
 
 
-subroutine read_file(filename, airport, N)
+subroutine read_file()
   implicit none
-  
-  type(map_target), allocatable :: airport(:)
-  character(len = 20) :: filename
+
   character(len = 20) :: d1 
   character(len = 1)  :: d5, d9
-  
-
   real    :: d2,d3,d4,d6,d7,d8 
-  integer :: N, ios, st, i
+  integer :: ios, st, i
   
   open(unit=10, file=filename, status="OLD", iostat=ios)
   if(ios/=0) then
@@ -62,26 +75,23 @@ subroutine read_file(filename, airport, N)
     read(10,*,IOSTAT = ios) d1, d2, d3, d4, d5, d6, d7, d8, d9
     if(ios /= 0) exit
 	
+	!read airport names and coordinates and
+	!transform coordinates to radians
 	airport(i)%name = d1
-	airport(i)%lat = (d2 + d3/60.0 + d4/3600.0)*pi/180.0
-	airport(i)%lon = (d6 + d7/60.0 + d8/3600.0)*pi/180.0
+	airport(i)%lat = (d2 + d3/60.0 + d4/3600.0)*deg_to_rad
+	airport(i)%lon = (d6 + d7/60.0 + d8/3600.0)*deg_to_rad
 	if(trim(d5)=='S') airport(i)%lat=-airport(i)%lat
 	if(trim(d9)=='W') airport(i)%lon=-airport(i)%lon
-	write(*,*) airport(i)%name, airport(i)%lat*180.0/pi, airport(i)%lon*180.0/pi
   end do
   close(10)
-  write(*,*)
 end subroutine read_file 
  
  
-subroutine calculate_distances(airport,N,distances)
+subroutine calculate_distances()
   implicit none
 
-  type(map_target) :: airport(:)
-  integer     :: N, st, i, j
-  real, allocatable :: distances(:,:)
+  integer :: st, i, j
   real :: r=6371.0
-
   
   do i=1,N
      do j=1,N
@@ -92,17 +102,17 @@ subroutine calculate_distances(airport,N,distances)
 	   endif
      end do
   end do
-  write(*,*) distances
+  !write(*,*) distances
 end subroutine calculate_distances
 
 
-recursive subroutine shortest_path(airport,stack,head,count,N,distances,shortestdistance,shortestroute)
+recursive subroutine shortest_path(stack,head)
   implicit none
-  integer :: i,j,head,st=0,count,N
+  integer :: i,j,head,st
   integer :: stack(N)
-  type(map_target) :: airport(N), shortestroute(N)
-  real :: s,shortestdistance
-  real :: distances(N,N)
+  real :: s
+
+  st=0
   
   do i=2,N
    !Choose next point
@@ -118,7 +128,7 @@ recursive subroutine shortest_path(airport,stack,head,count,N,distances,shortest
   
   !If point is visited jump over next statement
     !kutsutaan rekursiivista aliohjelmaa
-    if (head < N-1) call shortest_path(airport,stack,head+1,count,N,distances,shortestdistance,shortestroute)
+    if (head < N-1) call shortest_path(stack,head+1)
     !kun rekursio saavuttaa maksimisyvyyden (m=N-1) niin tulostetaan reitti, rekursion syvyys ja reitin pituus
     if (head == N-1) then
 	  
@@ -132,7 +142,7 @@ recursive subroutine shortest_path(airport,stack,head,count,N,distances,shortest
       
       if (s<shortestdistance) then
          shortestdistance=s
-         write(*,*) s,stack
+         !write(*,'(F10.1, 11I3)') s,stack
 		 do j=1,N
 	       shortestroute(j)=airport(stack(j)) 
 	     enddo
@@ -143,15 +153,50 @@ recursive subroutine shortest_path(airport,stack,head,count,N,distances,shortest
   enddo
 end subroutine shortest_path
 
-subroutine print_path(path)
-  
-  type(map_target) :: path(:)
+
+subroutine print_targets(maptargets)
+  implicit none
+
+  type(map_target) :: maptargets(N),path(N)
   integer :: i
+  character(len = 20) :: d1 
+  character(len = 1)  :: d5, d9
+  integer :: d2, d3, d4, d6, d7, d8
+
+  path=maptargets
+  path%lat=path%lat/deg_to_rad
+  path%lon=path%lon/deg_to_rad
 
   do i=1,N
-	write(*,*) shortestroute(i)%name,shortestroute(i)%lat*180.0/pi,shortestroute(i)%lon*180.0/pi
+    d1=path(i)%name
+  
+    if(path(i)%lat < 0) then 
+      d5='S'
+      path(i)%lat = -path(i)%lat
+    else
+      d5='N'
+    endif
+    if(path(i)%lon < 0) then 
+      d9='W'
+      path(i)%lon = -path(i)%lon
+    else
+	  d9='E'
+    endif
+  
+    d2 = Int(path(i)%lat)
+    d3 = Int((path(i)%lat - d2) * 60.0)
+    d4 = Int((path(i)%lat - d2 - d3/60.0) * 3600.0)  
+
+    d6 = Int(path(i)%lon)
+    d7 = Int((path(i)%lon - d6) * 60.0)
+    d8 = Int((path(i)%lon - d6 - d7/60.0)*3600.0)
+
+  
+	!write(*,*) shortestroute(i)%name, shortestroute(i)%lat, shortestroute(i)%lon
+    write(*,'(A20,I3,I3,I3,A2,I4,I3,I3,A2)') d1, d2, d3, d4, d5, d6, d7, d8, d9
+     
   enddo
 
-end subroutine print_path
+end subroutine print_targets
 
-end program airportappro
+end program airportap
