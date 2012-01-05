@@ -199,4 +199,4 @@ subroutine print_targets(maptargets)
 
 end subroutine print_targets
 
-end program airportap
+end program airportappro
