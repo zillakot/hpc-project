@@ -9,6 +9,7 @@ typedef struct City{
 	double longitude;
 	} City;
 	
+	
 int count_lines(FILE *fptr);
 void print_city(City *city);
 void read_cities(FILE *fptr, City* cities[], int count);
