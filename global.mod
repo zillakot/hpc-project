@@ -1,5 +1,5 @@
-GFORTRAN module version '4' created from tsp_genetic.f95 on Mon Jan  9 20:12:41 2012
-MD5:aee10d2dcb81ec53d94776b517258e55 -- If you edit this, you'll get what you deserve.
+GFORTRAN module version '4' created from global.f90 on Mon Jan  9 21:11:56 2012
+MD5:456c18251ac09ef7236453879401157c -- If you edit this, you'll get what you deserve.
 
 (() () () () () () () () () () () () () () () () () () () () () () () ()
 () () ())
@@ -34,13 +34,15 @@ UNKNOWN IMPLICIT-SAVE 0 0) (INTEGER 4 0 0 INTEGER ()) 0 0 () (CONSTANT (
 INTEGER 4 0 0 INTEGER ()) 0 '8') () 0 () () () 0 0)
 9 'global' 'global' 'global' 1 ((MODULE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN 0 0) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 () () () 0 0)
-10 'pi' 'global' 'pi' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+10 'n' 'global' 'n' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+11 'pi' 'global' 'pi' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
 IMPLICIT-SAVE 0 0) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
 REAL ()) 0 '0.3243f6c0000000@1') () 0 () () () 0 0)
-11 'selected_real_kind' '(intrinsic)' 'selected_real_kind' 1 ((
+12 'selected_real_kind' '(intrinsic)' 'selected_real_kind' 1 ((
 PROCEDURE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 FUNCTION) (
-UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 11 () () () 0 0)
+UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 12 () () () 0 0)
 )
 
 ('__convert_r4_r8' 0 2 'city' 0 3 'deg_to_rad' 0 7 'double' 0 8 'global'
-0 9 'pi' 0 10 'selected_real_kind' 0 11)
+0 9 'n' 0 10 'pi' 0 11 'selected_real_kind' 0 12)

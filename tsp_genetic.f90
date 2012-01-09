@@ -9,6 +9,9 @@ program tsp_genetic
 	call read_cities()
 	write(*,*) "Found next cities from file:"
 	call print_cities(citylist)
+	write(*,*) "Randomize:"
+	call random_population(citylist)
+	call print_cities(citylist)
 	call calculate_distances()
 	
 	write(*,*)
@@ -25,8 +28,7 @@ contains
 
 subroutine read_cities()
 	implicit none
-		
-	integer :: N
+	
 	character(len = 20) :: d1 
 	real(double)	:: d2,d3
 	integer :: ios, st, i
