@@ -66,8 +66,10 @@ int mutatePopulation(Population *population, City **cities, Config *config);
 void printPath(Path *path, unsigned long int numGenerations);
 void print_population(Population *population);
 void breed_population(Population *population, Config *config);
+void simple_breed_population(Population *population, int n, double** distances);
 void calculate_breed_chance(Population *population);
 int select_breeders(BreedersList *brl, Population *population, int maxBreeding);
+Path mate(Path *p1, Path *p2, int n, double** distances);
 
 int main(void) {
 	int n,i,j;
@@ -124,7 +126,10 @@ int main(void) {
 		/*Breed population*/
 		/*Only 6 shortest pathDistance gets to breed*/
 		/*Breeding can be also easily improved*/
-		breed_population(&population, &config);
+		
+		simple_breed_population(&population, config.numCities, distances);
+		
+		/*breed_population(&population, &config);*/
 		
 	}
 	
@@ -307,6 +312,77 @@ void print_population(Population *population){
 	
 }
 
+void simple_breed_population(Population *p, int n, double** distances){
+	/*Path child[3];
+	int i;
+	for(i=0;i<3;i++){
+		child[i].pathDistance=0.0;
+		child[i].breedingRate=0.0;
+		if((child[i].cityCombination = malloc((config->numCities)*sizeof(short unsigned int))) == NULL){
+	        return 1;
+		}
+	}*/
+	
+	p->path[p->numPaths-1]=mate(&p->path[0], &p->path[1], n, distances);
+	p->path[p->numPaths-2]=mate(&p->path[2], &p->path[3], n, distances);
+	p->path[p->numPaths-3]=mate(&p->path[4], &p->path[5], n, distances);
+}
+
+Path mate(Path *p1, Path *p2, int n, double** distances){
+	Path p;
+	p.pathDistance=0.0;
+	p.breedChance=0.0;
+	int isAlreadyUsed[n];
+	int nextpos1, nextpos2;
+	
+	int i=0,j=0,k=0;
+	
+	short unsigned int cityArray[n];
+	
+	for(i=0; i<n; i++){
+	        isAlreadyUsed[i] = 0;
+	}
+	
+	if(rand()%2>0) cityArray[0]=p1->cityCombination[0];
+	if(rand()%2<1) cityArray[0]=p2->cityCombination[0];
+	isAlreadyUsed[0]=1;
+	
+	while(i<n-1){
+		/*Search next index from both parents*/
+		for(j=0;j<n;j++){
+			if(cityArray[i]==p1->cityCombination[j]) nextpos1=j+1;
+			if(cityArray[i]==p2->cityCombination[j]) nextpos2=j+1;
+			
+			/*Boundary*/
+			if(nextpos1>=n) nextpos1==0;
+			if(nextpos2>=n) nextpos2==0;
+		}
+		while (isAlreadyUsed[nextpos1]!=0 && isAlreadyUsed[nextpos2]!=0){
+			nextpos1++;
+			nextpos2++;
+		}
+		if (isAlreadyUsed[nextpos1]!=0){
+			cityArray[i+1]=p2->cityCombination[nextpos2];
+			isAlreadyUsed[nextpos2];
+			
+			} else if (isAlreadyUsed[nextpos2]==0){
+				cityArray[i+1]=p1->cityCombination[nextpos1];
+				isAlreadyUsed[nextpos1];
+				
+				} else if(distances[cityArray[i]][p1->cityCombination[i+1]] < distances[cityArray[i]][p2->cityCombination[i+1]]){
+					cityArray[i+1]=p1->cityCombination[nextpos1];
+					isAlreadyUsed[nextpos1];
+					
+					} else { 
+						cityArray[i+1]=p2->cityCombination[nextpos2];
+						isAlreadyUsed[nextpos2];
+		}
+		i++;
+	}
+	
+	p.cityCombination=cityArray;
+	
+}
 
 void breed_population(Population *population, Config *config){
 	BreedersList brl;
