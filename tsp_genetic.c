@@ -2,47 +2,134 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <string.h>
+#include <time.h>
 
-typedef struct City{
+
+typedef struct {
+	int populationSize;
+	double mutationRate;
+	int numGenerations;
+	int numElitism;
+	int mutationSize;
+	int maxBreeding;
+	int numCities;
+} Config;
+
+typedef struct {
 	char name[80];
 	double latitude;
 	double longitude;
-	} City;
+} City;
+/*
+typedef struct {
+	int numCities;
+	float **distances;
+	City *city
+} CityList;
+*/	
+typedef struct {
+	int pathDistance;
+	float breedChance;
+	short unsigned int *cityCombination;
+} Path; 
 	
+typedef struct {
+	int numPaths;
+	Path *path;
+} Population;
+
+typedef struct {
+	Path parent1;
+	Path parent2;
+	Path children;
+} Breeders;
+
+typedef struct {
+	int numBreeders;
+	Breeders *breeders;
+} BreedersList;
 	
 int count_lines(FILE *fptr);
 void print_city(City *city);
-void read_cities(FILE *fptr, City* cities[], int count);
+void read_cities(FILE *fptr, City** cities, int count);
 double to_radians(double deg);
 double distance(City* from, City* to);
 double path_distance(City** cities, int count);
+double** calculate_distances(double** distances, City** cities, int n);
+
+int generate_random_population(Population *population, City** cities, double** distances, Config *config);
+int generate_random_cityCombination(Path *path, Config *config);
+int calculatepath_distance(Path *path, City **cities, Config *config, double** distances);
+int compare_population(const void * a, const void * b);
+int mutatePopulation(Population *population, City **cities, Config *config);
+void printPath(Path *path, unsigned long int numGenerations);
+void print_population(Population *population);
+void breed_population(Population *population, Config *config);
+void calculate_breed_chance(Population *population);
+int select_breeders(BreedersList *brl, Population *population, int maxBreeding);
 
 int main(void) {
-	int n;
-	FILE* fptr = fopen("p03.txt", "r");
+	int n,i,j;
+	FILE* fptr = fopen("input.in", "r");
 	assert(fptr != NULL);
-	
 	
 	n =	count_lines(fptr);
 	printf("\nNumber of cities: %i\n",n);
 	
+	/*Init cities*/
 	City* cities[n];
 	read_cities(fptr, cities, n);
+	printf("Init cities succesful... \n");
 	
-	print_city(cities[0]);
+	/*Init distances*/
+	double** distances;
+	distances=calculate_distances(distances,cities, n);
+	printf("Init distances succesful... \n");
 	
-	printf("\nDistance between Helsinki and Espoo: %f\n", distance(cities[1],cities[4]));
+	/*Init GA config*/
+	Config config;
+	config.populationSize=100;
+	config.mutationRate=0.1;
+	config.numGenerations=2;
+	config.numElitism=1;
+	config.mutationSize=1;
+	config.maxBreeding=10;
+	config.numCities=n;
+	printf("Init GA config succesful... \n");
 	
-	printf("\nDistance through default order of cities: %f\n", path_distance(cities,n));
+	/*Init random seed*/
+	srand ( time(NULL) );
+	printf("Init random seed succesful... \n");
 	
-	/*lueTiedosto(&x, &y, &size);
-
-	// Tulostetaan taulukon arvot 	
-	printf("%lf %lf\n", x[i], y[i]);
-	for(i = 0; i < size; i++) {
-  	       printf("%lf %lf\n", x[i], y[i]);
-        }
-	*/
+	/*Init population*/
+    Population population;
+	generate_random_population(&population, cities, distances, &config);
+	printf("Init population succesful... \n");
+	
+	/*Init mostFit*/
+    Path mostFit;
+	mostFit.cityCombination=malloc(n*sizeof(short unsigned int));
+	mostFit.pathDistance = 999999;
+    unsigned long int numGenerations = 0;
+	printf("Init mostFit succesful... \n");
+	
+	/*Start evolution*/
+	while(numGenerations < config.numGenerations){
+		numGenerations++;
+		
+		/*Sort population*/
+		qsort(population.path, population.numPaths, sizeof(Path), compare_population);
+		
+		/*Breed population*/
+		/*Only 6 shortest pathDistance gets to breed*/
+		/*Breeding can be also easily improved*/
+		breed_population(&population, &config);
+		
+	}
+	
+	print_population(&population);
+	
 return 0;
 }
 
@@ -99,6 +186,27 @@ double distance(City* from, City* to) {
 	return c*6370;
 }
 
+double** calculate_distances(double** distances, City** cities, int n){
+	int i,j;
+	if((distances = malloc(n*sizeof(double*))) == NULL){
+            return NULL;
+    }
+	for(i=0; i<n; ++i){
+		if((distances[i]=malloc(n*sizeof(double))) == NULL){
+			return NULL;
+		}
+	}
+	for(i=0; i<n ; i++){
+		for(j=0; j<n ; j++){
+			if (i==j) distances[i][j]=0;
+	    	if (i!=j) {
+				distances[i][j]=distance(cities[i],cities[j]);	
+			}
+		}
+	}
+	return distances;
+}
+
 double path_distance(City** cities, int count) {
 	double dist = 0;
 	for(int i = 0; i < count-1; i++) {
@@ -107,3 +215,191 @@ double path_distance(City** cities, int count) {
 	dist += distance(cities[count-1], cities[0]);
 	return dist;
 }
+
+int generate_random_population(Population *population, City** cities, double** distances, Config *config){
+	int i;
+
+	population->numPaths = config->populationSize;
+
+	if((population->path = (Path*)malloc(sizeof(Path) * population->numPaths)) == NULL){
+	    return 1;
+	}
+	for(i=0; i<population->numPaths; i++){
+		if((population->path[i].cityCombination = malloc((config->numCities)*sizeof(short unsigned int))) == NULL){
+	        return 1;
+		}
+	}
+	for(i=0; i<population->numPaths; i++){
+
+		generate_random_cityCombination(&population->path[i], config);
+	    calculatepath_distance(&population->path[i], cities, config, distances);
+	    population->path[i].breedChance = 0.0;
+
+
+	}
+
+
+	return 0;
+}
+	
+int generate_random_cityCombination(Path *path, Config *config){
+	int isAlreadyUsed[config->numCities];
+	short unsigned int chosenNode = 0;
+	int i;
+
+	for(i=0; i<config->numCities; i++){
+	        isAlreadyUsed[i] = 0;
+	}
+	for(i=0; i<config->numCities; i++){
+
+        // choose random node of the map
+        //chosenNode = lrand48() % config->numCities;
+        chosenNode = rand() % config->numCities;
+        //if this node was chosen already
+        if(isAlreadyUsed[chosenNode] != 0){
+
+	        //choose the next one of the list
+	        while(isAlreadyUsed[chosenNode] != 0){
+	            if(chosenNode + 1 < config->numCities){
+	            	chosenNode++;
+	            }else{
+	            	chosenNode = 0;
+	            }
+	        }
+        }
+        isAlreadyUsed[chosenNode] = 1;
+        path->cityCombination[i] = chosenNode;
+	}
+
+	return 0;
+}
+int calculatepath_distance(Path *p, City** cities, Config *config, double** distances){
+	int pathDistance = 0;
+	int i;
+	int currentNode, nextNode;
+	for(i=0; i<config->numCities-1; i++){
+		currentNode = p->cityCombination[i];
+		nextNode = p->cityCombination[i+1];
+		pathDistance += distances[currentNode][nextNode];
+	}
+
+	currentNode = p->cityCombination[config->numCities-1];
+	nextNode = p->cityCombination[0];
+	pathDistance += distances[currentNode][nextNode];
+
+	p->pathDistance = pathDistance;
+	return 0;
+}
+
+/* qsort function*/
+int compare_population(const void * a, const void * b){
+	Path *a1 = (Path*)a;
+	Path *b1 = (Path*)b;
+
+	return (a1->pathDistance - b1->pathDistance);
+}
+
+void print_population(Population *population){
+	int i;
+	for(i=0;i<population->numPaths;i++){
+		printf("n:%i, pathDistance:%i\n",i,population->path[i].pathDistance);
+	}
+	
+}
+
+
+void breed_population(Population *population, Config *config){
+	BreedersList brl;
+	brl.numBreeders = 0;
+	brl.breeders = NULL;
+	
+	calculate_breed_chance(population);
+	select_breeders(&brl, population, config->maxBreeding);
+	
+	
+}
+
+void calculate_breed_chance(Population *pop){
+        int i;
+        int minDist = pop->path[0].pathDistance;
+        float rate = 0.0;
+
+        for(i=1; i<pop->numPaths; i++){
+			rate = pow(2,i);
+                pop->path[i].breedChance = 1 / rate;
+        }
+}
+
+int select_breeders(BreedersList *brl, Population *pop, int maxBreeding){
+        Path *parent1 = NULL, *parent2 = NULL;
+        char *alreadyBreed = NULL;
+        int numBreeding = maxBreeding;
+        int i, j;
+
+        if((alreadyBreed = (char*)malloc(sizeof(char) * pop->numPaths)) == NULL){
+                return 1;
+        }
+        memset(alreadyBreed, 0, sizeof(char) * pop->numPaths);
+
+        for(i=0; i<pop->numPaths-1; i++){
+
+                if(numBreeding == 0)
+                        break;
+
+                if(alreadyBreed[i] == 1)
+                        continue;
+
+                if(rand()%100 > (pop->path[i].breedChance * 100))
+                        continue;
+
+                alreadyBreed[i] = 1;
+                parent1 = &pop->path[i];
+
+                brl->numBreeders += 1;
+                if((brl->breeders = (Breeders*)realloc(brl->breeders, sizeof(Breeders)*brl->numBreeders)) == NULL){
+                        free(alreadyBreed);
+                        return 1;
+                }
+                memcpy(&brl->breeders[brl->numBreeders-1].parent1, parent1, sizeof(Path));
+
+                for(j=i+1; j<pop->numPaths; j++){
+                        if(alreadyBreed[j] == 1)
+                                continue;
+
+                        if(rand()%100 > (pop->path[j].breedChance * 100))
+                                continue;
+
+                        parent2 = &pop->path[j];
+                        alreadyBreed[j] = 1;
+                        break;
+                }
+
+                if(parent2 == NULL){
+                        j = i+1;
+                        while(alreadyBreed[j] != 0){
+                                if(j+1 < pop->numPaths)
+                                        j++;
+                                else
+                                        j=0;
+
+                        }
+                        parent2 = &pop->path[j];
+                        alreadyBreed[j] = 1;
+                }
+
+                memcpy(&brl->breeders[brl->numBreeders-1].parent2, parent2, sizeof(Path));
+
+                memset(&brl->breeders[brl->numBreeders-1].children, pop->numPaths-1, sizeof(Path));
+
+                numBreeding--;
+        }
+
+        free(alreadyBreed);
+		
+		//printf("parent1 pathDistance:%i\n",parent1->pathDistance);
+		//printf("parent2 pathDistance:%i\n",parent2->pathDistance);
+		
+		
+        return 0;
+}
+

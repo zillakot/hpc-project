@@ -1,12 +1,12 @@
 11
-Helsinki-Vantaa 60 19 02 N 024 57 48 E
-Domodedovo 55 24 31 N 037 54 22 E
-Dubai 25 15 10 N 055 21 52 E
-Fiumicino 41 48 01 N 012 14 20 E
-Frankfurt 50 02 00 N 008 34 14 E
-Haneda 35 33 12 N 139 46 52 E
-Heathrow 51 28 39 N 000 27 41 W
-Madrid-Barajas 40 28 20 N 003 33 39 W
-Newark 40 41 33 N 074 10 07 W
-Roissy 49 00 35 N 002 32 52 E
-Vancouver 49 11 41 N 123 11 02 W
+Helsinki-Vantaa 60 19 
+Domodedovo 55 24 
+Dubai 25 15 
+Fiumicino 41 48 
+Frankfurt 50 02 
+Haneda 35 33 
+Heathrow 51 28
+Madrid-Barajas 40 28
+Newark 40 41
+Roissy 49 00 
+Vancouver 49 11 
