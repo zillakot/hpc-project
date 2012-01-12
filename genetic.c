@@ -107,13 +107,9 @@ void simple_breed_population(Population *p, int n, double** distances){
 	        return 1;
 		}
 	}*/
-	int i;
 	p->path[p->numPaths-1]=mate(&p->path[0], &p->path[1], n, distances);
-	for(i=0; i<n; i++){printf("%i \n",p->path[p->numPaths-1].cityCombination[i]);}
 	p->path[p->numPaths-2]=mate(&p->path[2], &p->path[3], n, distances);
-	for(i=0; i<n; i++){printf("%i \n",p->path[p->numPaths-2].cityCombination[i]);}
 	p->path[p->numPaths-3]=mate(&p->path[4], &p->path[5], n, distances);
-	for(i=0; i<n; i++){printf("%i \n",p->path[p->numPaths-3].cityCombination[i]);}
 }
 
 Path mate(Path *p1, Path *p2, int n, double** distances){
@@ -132,56 +128,63 @@ Path mate(Path *p1, Path *p2, int n, double** distances){
 	        isAlreadyUsed[i] = 0;
 			p.cityCombination[i]=0;
 	}
-	printf("Before mating\n");
-	for(i=0; i<n; i++){
-			printf("%i %i %i\n",p1->cityCombination[i], p2->cityCombination[i], p.cityCombination[i]);
+	
+	srand ( time(NULL) );
+	if(rand()%2>0){
+		p.cityCombination[0]=p1->cityCombination[0];
+		isAlreadyUsed[p1->cityCombination[0]]=1;
+	} else {
+		p.cityCombination[0]=p2->cityCombination[0];
+		isAlreadyUsed[p2->cityCombination[0]]=1;
 	}
 	
-	if(rand()%2>0) p.cityCombination[0]=p1->cityCombination[0];
-	if(rand()%2<1) p.cityCombination[0]=p2->cityCombination[0];
-	isAlreadyUsed[0]=1;
 	i=0; 
-	j=0;
 	while(i<n-1){
 		/*Search next index from both parents*/
-		for(j=0;j<n;j++){
-			if(p.cityCombination[i]==p1->cityCombination[j]){
-				nextpos1=j+1;
+			
+			j=0;
+			while(p.cityCombination[i] != p1->cityCombination[j]){
+				nextpos1=j+2;
 				if(nextpos1>=n) nextpos1=0;
+				j++;
 			}
-			if(p.cityCombination[i]==p2->cityCombination[j]){
-				nextpos2=j+1;
+			j=0;
+			while(p.cityCombination[i] != p2->cityCombination[j]){
+				nextpos2=j+2;
 				if(nextpos2>=n) nextpos2=0;
+				j++;
 			}
-		}
-		while (isAlreadyUsed[nextpos1]!=0 && isAlreadyUsed[nextpos2]!=0){
+		while (isAlreadyUsed[p1->cityCombination[nextpos1]]!=0 && isAlreadyUsed[p2->cityCombination[nextpos2]]!=0){
 			nextpos1++;
 			if(nextpos1>=n) nextpos1=0;
 			nextpos2++;
 			if(nextpos2>=n) nextpos2=0;
 		}
-		if (isAlreadyUsed[nextpos1]!=0){
+		if (isAlreadyUsed[p1->cityCombination[nextpos1]]!=0){
 			p.cityCombination[i+1]=p2->cityCombination[nextpos2];
-			isAlreadyUsed[nextpos2]=1;
-			
-			} else if (isAlreadyUsed[nextpos2]==0){
-				p.cityCombination[i+1]=p1->cityCombination[nextpos1];
-				isAlreadyUsed[nextpos1]=1;
+			isAlreadyUsed[p2->cityCombination[nextpos2]]=1;
 				
-				} else if(distances[p.cityCombination[i]][p1->cityCombination[i+1]] < distances[p.cityCombination[i]][p2->cityCombination[i+1]]){
+				} else if(isAlreadyUsed[p2->cityCombination[nextpos2]]!=0){
 					p.cityCombination[i+1]=p1->cityCombination[nextpos1];
-					isAlreadyUsed[nextpos1]=1;
+					isAlreadyUsed[p1->cityCombination[nextpos1]]=1;
 					
-					} else { 
-						p.cityCombination[i+1]=p2->cityCombination[nextpos2];
-						isAlreadyUsed[nextpos2]=1;
+						} else if(distances[p.cityCombination[i]][p1->cityCombination[i+1]] < distances[p.cityCombination[i]][p2->cityCombination[i+1]]){
+							p.cityCombination[i+1]=p1->cityCombination[nextpos1];
+							isAlreadyUsed[p1->cityCombination[nextpos1]]=1;
+						
+							} else { 
+								p.cityCombination[i+1]=p2->cityCombination[nextpos2];
+								isAlreadyUsed[p2->cityCombination[nextpos2]]=1;
+								
 		}
 		i++;
 	}
-	printf("After mating\n");
+	
+	/*printf("After mating\n");
 	for(i=0; i<n; i++){
-			printf("%i %i %i\n",p1->cityCombination[i], p2->cityCombination[i], p.cityCombination[i]);
-	}
+			printf("%i %i %i %i\n",p1->cityCombination[i], p2->cityCombination[i], p.cityCombination[i],isAlreadyUsed[i]);
+	}*/
+	
 	p.cityCombination=p.cityCombination;
 	p.fitness=path_distance(&p, distances, n);
 	return p;
@@ -287,8 +290,33 @@ int path_distance(Path *path, double** distances, int n) {
 	for(int i = 0; i < n-1; i++) {
 		
 		dist += distances[path->cityCombination[i]][ path->cityCombination[i+1]];
-		printf("%f ",dist);
 	}
 	dist += distances[path->cityCombination[n-1]][ path->cityCombination[0]];
 	return dist;
+}
+
+void mutate_population(Population *pop, Config *config){
+	int i;
+	int n = config->numGenes;
+	int mutationRate = config->mutationRate*100;
+	
+	srand ( time(NULL) );
+	
+	for(i=config->numElitism; i<pop->numPaths; i++){
+		
+		
+		if(rand()%100 < mutationRate) {
+			int a=0, b=0;
+			unsigned short int temp; 
+			while(a == b){
+				a=rand()%n;
+				b=rand()%n;
+			}
+			temp=pop->path[i].cityCombination[a];
+			pop->path[i].cityCombination[a]=pop->path[i].cityCombination[b];
+			pop->path[i].cityCombination[b]=temp;
+		}
+	
+		
+	}	
 }

@@ -48,5 +48,6 @@ void calculate_breed_chance(Population *population);
 int select_breeders(BreedersList *brl, Population *population, int maxBreeding);
 Path mate(Path *p1, Path *p2, int n, double** distances);
 int path_distance(Path *path, double** distances, int n);
+void mutate_population(Population *population, Config *config);
 
 #endif /* GENETIC_H_ */

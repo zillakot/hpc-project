@@ -4,16 +4,27 @@
 #include <time.h>
 #include "genetic.h"
 #include "cities.h"
+#include "mpi.h"
 
-int main(void) {
+int main(int argc, char *argv[]) {
 	int n;
+	
+	MPI_Status status;
+  	int num, rank, size, tag, next, from;
+
+  	/* Start up MPI */
+
+  	MPI_Init(&argc, &argv);
+  	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	
+	/*Init cities*/
 	FILE* fptr = fopen("input.in", "r");
 	assert(fptr != NULL);
 	
 	n =	count_lines(fptr);
 	printf("\nNumber of cities: %i\n",n);
 	
-	/*Init cities*/
 	City* cities[n];
 	read_cities(fptr, cities);
 	printf("Init cities succesful... \n");
