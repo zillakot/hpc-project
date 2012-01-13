@@ -27,7 +27,7 @@ int main(void) {
 	Config config;
 	config.populationSize=1000;
 	config.mutationRate=0.1;
-	config.numGenerations=1000;
+	config.numGenerations=6000;
 	config.numElitism=1;
 	config.mutationSize=1;
 	config.maxBreeding=10;
@@ -50,7 +50,7 @@ int main(void) {
 	while(numGenerations < config.numGenerations){
 		numGenerations++;
 		
-		if (numGenerations%10==0) printf("%i. generation", numGenerations);
+		if (numGenerations%100==0) printf("%i. generation", numGenerations);
 		
 		/*Sort population*/
 		qsort(population.path, population.numPaths, sizeof(Path), compare_population);

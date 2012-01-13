@@ -1,0 +1,112 @@
+\title{Kauppamatkustajaongelman ratkaiseminen geneettisell\"a algoritmilla}
+\author{\Large
+	\textsc{Markus Korpinen} \\
+	\mbox{}\\
+	Suurteholaskennan ty\"okalut\\
+	Fysiikan laitos, Helsingin yliopisto
+}
+\date{\today}
+
+\documentclass[12pt]{article}
+
+\usepackage{graphicx}
+
+\usepackage[finnish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[paper=a4paper,dvips,top=2.5cm,left=2.5cm,right=2.5cm,
+    foot=1cm,bottom=4cm]{geometry}
+\usepackage[fleqn]{amsmath}
+
+% Various AMS fonts.
+\usepackage{amsfonts}
+
+% Many special mathematical characters, including the
+% famous blackboard bold letters used.
+\usepackage{amssymb}
+
+% Theorems using the AMS style.
+\usepackage{amsthm}
+% The following is probably the optimal method for numbering
+% lemmas, examples, definitions their like. We number them
+% all together. It is annoying and difficult
+% for the reader to search for these theorem-like entities in
+% if they are.
+
+\renewcommand{\textfraction}{0.01}
+% Numbering of theorems is by section, e.g., Theorem 1.3, etc.
+% This makes it easier for the reader to search for them.
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{fact}[theorem]{Fact}
+\newtheorem{example}[theorem]{Example}
+
+% If the paper has a large number of equations, figures, tables, etc.,
+% then they should be numbered within sections. Comment out
+% if this is not what you want.
+\numberwithin{equation}{section}
+%\numberwithin{figure}{section}
+\numberwithin{table}{section}
+
+
+%\usepackage{showkeys}
+
+\begin{document}
+
+
+\maketitle
+
+\newpage{}
+
+%\tableofcontents{}
+
+
+\section{Johdanto}
+Kauppamatkustajaongelma on yksi esimerkki laskennallisesti huonosti skaalautuvasta ongelmasta. Kauppamatkustajaongelmassa pyritään löytämään usean eri kaupungin välille reitti, joka on lyhyempi kuin mikään muu reitti niin että palataan takaisin alkupisteeseen. Tehokkaita ratkaisuja lyhyimmän reitin löytämiseksi ei ole, mutta vähemmän tarkan ratkaisun kelvatessa on useitakin nopeita algoritmejä, kuten geneettiset algoritmit, jotka oikein käytettäessä ovat suhteellisen nopeita ja antavat tyydyttäviä vastauksia.
+
+Geneettiset algoritmit pyrkivät ratkaisemaan ongelman niin että satunnaisesti valittujen ratkaisujen joukosta muodestetaan populaatio, jonka parhaat yksilöt lisääntyvät keskenään muodostaen aina vain parempia yksilöitä. Tämän lisäksi yksilöt mutatoituvat satunnaisesti, jotta pystyttäisiin lieventämään sitä tosiasiaa, että satunnaisesti valittu populaatio on usein vain hyvin pieni murto-osa kaikkien eri vaihtoehtojen joukosta. Monen generaation jälkeen voidaan poimia tulos, jonka pitäisi olla lähellä oikeaa tulosta, mutta ei kuitenkaan voida olla varmoja onko tulos tarkin mahdollinen.
+
+Kauppamatkustajaongelman ratkaisemiseksi geneettisillä algoritmeillä muodostetaan aluksi satunnaisesti valittujen reittien joukosta populaatio. Tämän reittijoukon lyhyimpiä reittejä yhdistelemällä muodestetaan reittejä , jotka ovat myöskin lyhyimpiä tai parhaimmassa tapauksessa lyhyimpiä reittejä. Reitit lajitellaan aina lyhyimmyys järjestykseen ja uudet reitit syrjäyttävät joukon huonoimmat reitit. Tämän lisäksi mutaatio tapahtuu niin, että tietyllä todennäköisyydellä reittien jotkin kaupungit vaihtavat paikkoja keskenään.
+
+Tässä työssä kauppamatkustajaongelmaa pyritään ratkaisemaan geneettisten algoritmien avulla käyttäen apuna c-ohjelmointikieltä. 
+
+
+\section{Ohjelman rakenne}
+
+Ohjelma koostuu kolmesta osasta, jotka ovat pääohjelman \textbf{tsp\_mpi} lisäksi moduulit \textbf{genetic} ja \textbf{cities}. Ohjelma avaa tiedoston, lukee kaupungit, laskee kaupunkien väliset etäisyydet, luo satunnaisen populaation reiteistä sekä lajittelee, pariuttaa, ja mutatoi usean generaation ajan populaatiota. Lopuksi tulostetaan populaation vahvimmat yksilöt, eli lyhyimmät reitit.
+
+\subsection{Tsp\_mpi.c}
+Pääohjelma kutsuu funktioita moduuleista \textbf{genetic} ja \textbf{cities}. 
+
+\subsection{Cities}
+Moduuli kostuu tiedostosta cities.c, sekä sen header-tiedostosta cities.h. Cities.c sisältää seuraavat funktiot:
+\begin{description}
+\item[print\_city] tulostaa halutun kaupungin nimen ja koordinaatit komentoriville. 
+\item[count\_lines] lukee tiedostosta kaupunkien lukumäärän. Funktio jättää huomiotta rivit jotka on merkattu \#-merkillä, sekä tyhjät rivit.
+\item[read\_cities] lukee tiedostosta kaupungit koordinaatteineen ja tallentaa ne muistiin. Kaupunkien on oltava muodossa \emph{nimi leveyspiiri pituuspiiri}. Leveyspiiri ja pituuspiiri luetaan asteissa.
+\item[to\_radians] muuttaa asteet radiaaneiksi.
+\item[distance] ottaa parametreina lähtö-- ja maalikaupungin ja palauttaa niiden välisen etäisyyden.
+\item[calculate\_distances] ottaa sisääntuloparametreina kaksiulotteisen taulukon, listan kaupungeista sekä kaupunkien lukumäärän. Funktio alustaa kaksiulotteisen taulukon distances ja laskee siihen kaikkien kaupunkin väliset etäisyydet sekä palauttaa paluuarvona kaksiulotteisen taulukon.
+
+\end{description}
+
+\subsection{Genetic}
+Moduuli kostuu tiedostosta genetic.c, sekä sen header-tiedostosta genetic.h. Genetic.c sisältää seuraavat funktiot:
+\begin{description}
+\item[generate\_random\_population] alustaa popupulaation ja reitit omiin tietotyyppeihinsä \emph{Population} ja \emph{Path}. Populaatio sisältää tiedon populaation lukumäärästä sekä osoitinmuuttujan taulukkoon reiteistä. Satunnaisesti valitut reitit tallennetaan tietotyypeiksi \emph{Path} ja niiden mukana tallennetaan tieto reitin pituudesta.
+\item[calculate\_fitness] laskee yksittäisen reitin pituuden.
+\item[generate\_random\_combination] ottaa parametreina reitin ja asetukset, varaa muistista riittävästi tilaa reitille ja luo satunnaisen reitin kaupungeista.
+\item[compare\_population] on pikalajittelua (\textbf{qsort}) varten muodostettu vertailufunktio.
+\
+
+\end{description}
+
+
+
+\section{käyttödokumentti}
+\section{tulokset}
+
+\end{document}

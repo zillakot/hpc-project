@@ -6,7 +6,7 @@
 typedef struct {
 	int fitness;
 	float breedChance;
-	short unsigned int *cityCombination;
+	short unsigned int *combination;
 } Path; 
 	
 typedef struct {
@@ -36,11 +36,11 @@ typedef struct {
 } Config;
 
 int generate_random_population(Population *population,  double** distances, Config *config);
-int generate_random_cityCombination(Path *path, Config *config);
+int generate_random_combination(Path *path, Config *config);
 int calculate_fitness(Path *path, Config *config, double** distances);
 int compare_population(const void * a, const void * b);
 int mutatePopulation(Population *population, City **cities, Config *config);
-void printPath(Path *path, unsigned long int numGenerations);
+void printPath(Path *path);
 void print_population(Population *population);
 void breed_population(Population *population, Config *config);
 void simple_breed_population(Population *population, int n, double** distances);
