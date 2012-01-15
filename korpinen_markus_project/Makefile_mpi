@@ -1,0 +1,17 @@
+# makefile
+
+CC = gcc -lm -std=c99 -pedantic -Wall -Wextra -Werror
+
+all: TSP
+TSP: tsp_mpi.o cities.o genetic.o 
+	$(CC) tsp_mpi.o cities.o genetic.o -o TSP_MPI
+cities.o: cities.c
+	$(CC) -c cities.c -o cities.o
+genetic.o: genetic.c
+	$(CC) -c genetic.c -o genetic.o
+tsp_mpi.o: tsp_mpi.c
+	$(CC) -c tsp_mpi.c -o tsp_mpi.o
+
+clean:
+	rm *.o
+	rm TSP

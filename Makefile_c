@@ -1,6 +1,6 @@
 # makefile
 
-CC = gcc -std=c99 -pedantic -Wall -Wextra -Werror
+CC = gcc -lm -std=c99 -pedantic -Wall -Wextra -Werror
 
 all: TSP
 TSP: tsp_genetic.o cities.o genetic.o 

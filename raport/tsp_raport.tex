@@ -67,11 +67,16 @@
 \section{Johdanto}
 Kauppamatkustajaongelma on yksi esimerkki laskennallisesti huonosti skaalautuvasta ongelmasta. Kauppamatkustajaongelmassa pyritään löytämään usean eri kaupungin välille reitti, joka on lyhyempi kuin mikään muu reitti niin että palataan takaisin alkupisteeseen. Tehokkaita ratkaisuja lyhyimmän reitin löytämiseksi ei ole, mutta vähemmän tarkan ratkaisun kelvatessa on useitakin nopeita algoritmejä, kuten geneettiset algoritmit, jotka oikein käytettäessä ovat suhteellisen nopeita ja antavat tyydyttäviä vastauksia.
 
+Tässä työssä kauppamatkustajaongelmaa pyritään ratkaisemaan geneettisten algoritmien avulla käyttäen apuna c-ohjelmointikieltä. 
+
+\section{Algoritmi}
 Geneettiset algoritmit pyrkivät ratkaisemaan ongelman niin että satunnaisesti valittujen ratkaisujen joukosta muodestetaan populaatio, jonka parhaat yksilöt lisääntyvät keskenään muodostaen aina vain parempia yksilöitä. Tämän lisäksi yksilöt mutatoituvat satunnaisesti, jotta pystyttäisiin lieventämään sitä tosiasiaa, että satunnaisesti valittu populaatio on usein vain hyvin pieni murto-osa kaikkien eri vaihtoehtojen joukosta. Monen generaation jälkeen voidaan poimia tulos, jonka pitäisi olla lähellä oikeaa tulosta, mutta ei kuitenkaan voida olla varmoja onko tulos tarkin mahdollinen.
 
 Kauppamatkustajaongelman ratkaisemiseksi geneettisillä algoritmeillä muodostetaan aluksi satunnaisesti valittujen reittien joukosta populaatio. Tämän reittijoukon lyhyimpiä reittejä yhdistelemällä muodestetaan reittejä , jotka ovat myöskin lyhyimpiä tai parhaimmassa tapauksessa lyhyimpiä reittejä. Reitit lajitellaan aina lyhyimmyys järjestykseen ja uudet reitit syrjäyttävät joukon huonoimmat reitit. Tämän lisäksi mutaatio tapahtuu niin, että tietyllä todennäköisyydellä reittien jotkin kaupungit vaihtavat paikkoja keskenään.
 
-Tässä työssä kauppamatkustajaongelmaa pyritään ratkaisemaan geneettisten algoritmien avulla käyttäen apuna c-ohjelmointikieltä. 
+\section{Rinnakkaistaminen}
+Ohjelma pyrittiin ohjelmoimaan niin, että root-prosessori huolehtii tiedoston lukemisesta, kaupunkien välisten etäisyyksien laskemisesta, ja geneettisen algoritmien asetuksien alustamisesta. Tämän jälkeen algoritmin rinnakkaistamista varten tarvittavat tiedot lähetetään \emph{MPI\_Broadcast}-funktiolla muille prosessoreille. Jokainen prosessori muodostaa oman populaationsa ja lähettää aina kymmenen generaation välein kahden parhaan yksilönsä lapsen seuraavalle prosessorille ja myöskin vastaanottaa edelliseltä prosessorilta \emph{MPI\_Sendrecv}-funktiolla. Näin populaatiot saadaan sekoittumaan. Riittävän monen generaation jälkeen prosessorit lähettävät parhaan yksilönsä root-prosessorille, joka valitsee näistä parhaimman ja tulostaa sen näkyviin.
+
 
 
 \section{Ohjelman rakenne}
@@ -79,7 +84,7 @@ Tässä työssä kauppamatkustajaongelmaa pyritään ratkaisemaan geneettisten a
 Ohjelma koostuu kolmesta osasta, jotka ovat pääohjelman \textbf{tsp\_mpi} lisäksi moduulit \textbf{genetic} ja \textbf{cities}. Ohjelma avaa tiedoston, lukee kaupungit, laskee kaupunkien väliset etäisyydet, luo satunnaisen populaation reiteistä sekä lajittelee, pariuttaa, ja mutatoi usean generaation ajan populaatiota. Lopuksi tulostetaan populaation vahvimmat yksilöt, eli lyhyimmät reitit.
 
 \subsection{Tsp\_mpi.c}
-Pääohjelma kutsuu funktioita moduuleista \textbf{genetic} ja \textbf{cities}. 
+Pääohjelma kutsuu funktioita moduuleista \textbf{genetic} ja \textbf{cities}. Rinnakkaistamattoman pääohjelman nimi on \textbf{tsp\_genetic.c}.
 
 \subsection{Cities}
 Moduuli kostuu tiedostosta cities.c, sekä sen header-tiedostosta cities.h. Cities.c sisältää seuraavat funktiot:
@@ -97,16 +102,93 @@ Moduuli kostuu tiedostosta cities.c, sekä sen header-tiedostosta cities.h. Citi
 Moduuli kostuu tiedostosta genetic.c, sekä sen header-tiedostosta genetic.h. Genetic.c sisältää seuraavat funktiot:
 \begin{description}
 \item[generate\_random\_population] alustaa popupulaation ja reitit omiin tietotyyppeihinsä \emph{Population} ja \emph{Path}. Populaatio sisältää tiedon populaation lukumäärästä sekä osoitinmuuttujan taulukkoon reiteistä. Satunnaisesti valitut reitit tallennetaan tietotyypeiksi \emph{Path} ja niiden mukana tallennetaan tieto reitin pituudesta.
-\item[calculate\_fitness] laskee yksittäisen reitin pituuden.
+\item[calculate\_fitness] laskee yksittäisen reitin "kunnon" eli sen kuinka lyhyt reitti on.
 \item[generate\_random\_combination] ottaa parametreina reitin ja asetukset, varaa muistista riittävästi tilaa reitille ja luo satunnaisen reitin kaupungeista.
 \item[compare\_population] on pikalajittelua (\textbf{qsort}) varten muodostettu vertailufunktio.
-\
+\item[print\_population] tulostaa populaation niin että näkyviin tylee jokaisen reitin järjestysnumero ja pituus.
+\item[simple\_breed\_population] on yksinkertaisempi versio suunnitellusta risteyttämisfunktiosta. Funktio risteyttää kymmenen populaation parasta niin että ensimmäinen ja toinen risteytyvät, kolmas ja neljäs risteytyvät jne. Risteyttämiseen käytetään funktiokutsua \emph{mate}.
+\item[mate] ottaa parametreina kaksi reittiä ja palauttaa niistä tehtävänannossa esitellyn tavan mukaisesti uuden reitin.
+\item[mutate\_population] aiheuttaa syötettyyn populaatioon mutaatioita vakion \emph{mutationRate} mukaisesti. Mutaatio tapahtuu vaihtamalla satunnaisesti valitun kahden kaupungin paikkaa. Tämän lisäksi mutatoiduille reitelle lasketaan uudet pituudet funktiolla \emph{path\_distance}
+\item[path\_distance] laskee reitin pituuden käyttäen apunaan kaikkien kaupunkien väliset reitit sisältävää taulukkoa \emph{distances}.
 
 \end{description}
 
+\section{Käyttödokumentti}
 
+\subsection{Rinnakkaistettu ajo}
+Ohjelman lähdekoodi käännetään kirjoittamalla komentoriville  
+\begin{align*}
+\texttt{\$ make -f Makefile\_mpi}
+\end{align*}
+ja tämän jälkeen ohjelman voi suorittaa käyttäen esimerkiksi neljää laskentaydintä komennolla
+\begin{align*}
+\texttt{\$ mpirun -np 4 `pwd`/TSP}
+\end{align*}
+Koska en onnistunut saamaan rinnakkaistettua versiota ohjelmasta toimimaan kunnolla oli ohjelman ulosanti seuraava:
+\begin{align*}
+\begin{tabular}{l}
+\texttt{\$ mpirun -np 4 `pwd`/TSP }\\
+\texttt{WARNING: Unable to read mpd.hosts or list of hosts isn't }\\\texttt{provided. MPI job will be run on the current machine only.}\\
+\texttt{TaskID 1: Init random seed succesful...}\\
+\texttt{TaskID 1: Init population succesful... }\\
+\texttt{TaskID 2: Init random seed succesful... }\\
+\texttt{TaskID 2: Init population succesful... }\\
+\texttt{rank 3 in job 1  korundi.grid.helsinki.fi\_57031   caused }\\\texttt{collective abort of all ranks
+  exit status of rank 3: }\\\texttt{killed by signal 11}\\
+  \texttt{rank 2 in job 1  korundi.grid.helsinki.fi\_57031   caused }\\\texttt{collective abort of all ranks
+  exit status of rank 2: }\\\texttt{killed by signal 11}\\
+  \texttt{rank 1 in job 1  korundi.grid.helsinki.fi\_57031   caused }\\\texttt{collective abort of all ranks
+  exit status of rank 1: }\\\texttt{killed by signal 11}\\
+  \texttt{TaskID 3: Init random seed succesful...}\\
+  \texttt{TaskID 3: Init population succesful...}
+\end{tabular}
+\end{align*}
+Ongelma todennäköisesti johtuu väärästä tavasta lähettää itsemääriteltyjä tietotyyppejä, mutta aika ei riittänyt kaikkien ongelmien selvittämiseen. 
 
-\section{käyttödokumentti}
-\section{tulokset}
+\subsection{Rinnakkaistamaton ajo}
+Ohjelman lähdekoodi käännetään kirjoittamalla komentoriville  
+\begin{align*}
+\texttt{\$ make}
+\end{align*}
+ja tämän jälkeen ohjelman voi suorittaa  komennolla
+\begin{align*}
+\texttt{\$ ./TSP}
+\end{align*}
+Yhdessä ajossa ohjelma luki 22 kaupunkia ja tulosti
+\begin{align*}
+\begin{tabular}{l}
+\texttt{\$ ./TSP }\\
+\\
+\texttt{Number of cities: 22}\\
+\texttt{Init cities succesful... }\\
+\texttt{Init distances succesful... }\\
+\texttt{Init GA config succesful... }\\
+\texttt{Init random seed succesful... }\\
+\texttt{Init population succesful... }\\
+\texttt{Init mostFit succesful... }\\
+\texttt{Shortest path of 1000th generation: 45994}\\
+\texttt{Shortest path of 2000th generation: 40775}\\
+\texttt{Shortest path of 3000th generation: 40775}\\
+\texttt{Shortest path of 4000th generation: 40568}\\
+\texttt{Shortest path of 5000th generation: 40568}\\
+\texttt{Shortest path of 6000th generation: 40568}\\
+\texttt{Shortest path of 7000th generation: 40568}\\
+\texttt{Shortest path of 8000th generation: 40568}\\
+\texttt{Shortest path of 9000th generation: 40568}\\
+\texttt{Shortest path of 10000th generation: 40568}\\
+\texttt{Shortest path is 40568}\\
+\\
+\texttt{PARIISI (48.850000 2.350000)}\\
+\texttt{MOSKOVA (55.750000 37.610000)}\\
+\texttt{ESPOO (60.200000 24.650000)}\\
+\texttt{...}
+\end{tabular}
+\end{align*}
+
+\section{Vertailuanalyysi}
+Rinnakkaistetun koodin toimimattomuuden vuoksi haluttua vertailuanalyysiä ei pystytty suorittamaan.
+
+\section{Johtopäätökset}
+Tehtävässä käytetyn 22 kaupungin muodostamia mahdollisia reittejä on 21! kappaletta eli $5,1*10^{19}$ analysoitavaa reittiä. Pienimmän mahdollisen reitin löytäminen käyttäen esimerkiksi pelkkää raakaa laskentatehoa kestää jo aika kauan ja sitä varten esimerkiksi nyt käytetty tuhannen reitin populaatio kymmenellä tuhannella generaatiolla on hyvin paljon nopeampi. Sen todennäköisyys että reitti olisi pienin mahdollinen ei tässä tapauksessa ole kovinkaan suuri ja se ilmenee sillä että tarkasteltaessa usean ajon tuloksia aina välillä löytyy taas kerran lyhyempi reitti kuin aikaisemmin. Jotta algoritmi toimisi paremmin olisi risteytymistä ja mutatoimista kehitettävä hieman niin että voisi olla mahdollista saada vahvempiakin mutaatioita ja että pariutumiseen myöskin tulisi hieman satunnuisuutta mukaan eikä niin että vain parhaat pääsevät pariutumaan. Mikäli vain samaan lokaaliin minimiin joutuneet yksilöt pariutuvat keskenään niin silloin kuopasta pois pääseminen on hieman vaikeampaa. Geneettisten algoritmien käyttäminen mahdollistaa monien ongelmien tutkimisen kunhan vain luovutaan esimerkiksi siitä toivosta että pystyttäisiin aina löytämään pienin minimi.
 
 \end{document}
